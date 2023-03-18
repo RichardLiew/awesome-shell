@@ -1,0 +1,386 @@
+#!/bin/bash
+
+# Copyright (c) 2017 Zichoole Inc.
+# All rights reserved.
+#
+# "Logging Library For Bash" version 1.0
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#    * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following disclaimer
+# in the documentation and/or other materials provided with the
+# distribution.
+#    * Neither the name of Zichoole Inc. nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES_; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# ---
+# Author:  Zichoole
+# Created: 2017-08-30 10:46:00
+# E-mail:  zichoole@gmail.com
+#
+# ---
+# Description:
+#   Logging package for bash.
+#
+###############################################################################
+
+SET_HEAD "LOGGING_SLIB_" && return 0
+CHECK_VARIABLE "SHELL_LIBRARIES_PATH"
+CHECK_VARIABLE "SHUNITTEST_HOME"
+
+###############################################################################
+
+source "${SHELL_LIBRARIES_PATH}/textpainting/textpainting.slib" 2>&1 >/dev/null
+
+###############################################################################
+
+set -e
+
+###############################################################################
+
+readonly -a LOG_LABELS=(
+    "DEBUG"
+    "INFO"
+    "WARN"
+    "ERROR"
+    "FATAL"
+    "START"
+    "FINISH"
+)
+
+readonly DEBUG=0
+readonly INFO=1
+readonly WARN=2
+readonly ERROR=3
+readonly FATAL=4
+readonly START=5
+readonly FINISH=6
+
+###############################################################################
+
+readonly LOG_TIMESTAMP=0
+readonly LOG_LABEL=1
+readonly LOG_FUNCNAMES=2
+readonly LOG_PARAMS=3
+readonly LOG_MESSAGE=4
+
+###############################################################################
+#
+# Configurations:
+#
+###############################################################################
+
+LOG_LEVEL="${DEBUG}"
+LOG_OUTPUT="/dev/stdout"
+LOG_COLOR="${ON}"
+
+LOG_COLORS=(
+    "0:226 0:21 0:8 0:7 0:21"
+    "0:226 0:2 0:8 0:7 0:2"
+    "0:226 0;${BLINK}:130 0;${BLINK}:8 0;${BLINK}:7 0;${BLINK}:130"
+    "0:226 0;${BLINK}:1 0;${BLINK}:8 0;${BLINK}:7 0;${BLINK}:1"
+    "0:226 0;${BLINK}:93 0;${BLINK}:8 0;${BLINK}:7 0;${BLINK}:93"
+    "0:226 0:83 0:8 0:7 0:21"
+    "0:226 0:83 0:8 0:7 0:21"
+)
+
+LOG_DATE_FORMAT="%Y-%m-%d %H:%M:%S %Z"
+LOG_FIELDS=(
+    "${LOG_TIMESTAMP}"
+    "${LOG_LABEL}"
+    "${LOG_FUNCNAMES}"
+    "${LOG_PARAMS}"
+    "${LOG_MESSAGE}"
+)
+
+###############################################################################
+
+function _wrap_timestamp() {
+    local -r timestamp="$1"
+    if [ -n "$(echo "${LOG_FIELDS[@]}" | grep "${LOG_TIMESTAMP}")" ]; then
+        echo "[${timestamp}]"
+    fi
+}
+
+function _wrap_label() {
+    local label="$1"
+    if [  -n "$(echo "${LOG_FIELDS[@]}" | grep "${LOG_LABEL}")" ]; then
+        local max_length=0
+        for item in ${LOG_LABELS[@]}; do
+            if [ ${#item} -gt ${max_length} ]; then
+                max_length=${#item}
+            fi
+        done
+
+        if [ ${#label} -lt ${max_length} ]; then
+            label="[${label}]$(
+                repeat_substring " " "$((${max_length}-${#label}))"
+            )"
+        else
+            label="[${label}]"
+        fi
+        echo "${label}"
+    fi
+}
+
+function _wrap_funcnames() {
+    local -r funcnames="$1"
+    if [ -n "$(echo "${LOG_FIELDS[@]}" | grep "${LOG_FUNCNAMES}")" ]; then
+        echo "[${funcnames}]"
+    fi
+}
+
+function _wrap_params() {
+    local -r params="$1"
+    if [ -n "$(echo "${LOG_FIELDS[@]}" | grep "${LOG_PARAMS}")" ]; then
+        echo "[${params}]"
+    fi
+}
+
+function _wrap_message() {
+    local -r message="$1"
+    if [ -n "$(echo "${LOG_FIELDS[@]}" | grep "${LOG_MESSAGE}")" ]; then
+        echo " ${message}"
+    fi
+}
+
+function _wrap_log() {
+    local -r timestamp="$1"
+    local -r label="$2"
+    local -r funcnames="$3"
+    local -r params="$4"
+    local -r message="$5"
+
+    echo "${timestamp}${label}${funcnames}${params}${message}"
+}
+
+###############################################################################
+
+function _format_color_log() {
+    local timestamp="$1"
+    local level="$2"
+    local funcnames="$3"
+    local params="$4"
+    local message="$5"
+
+    local label="${LOG_LABELS[${level}]}"
+    local -r colors=(${LOG_COLORS[${level}]})
+
+    local -r tcolor="${colors[${LOG_TIMESTAMP}]}"
+    timestamp="$(
+        paint \
+            "${tcolor%%:*}" \
+            "${tcolor##*:}" \
+            "$(_wrap_timestamp "${timestamp}")"
+    )"
+
+    local -r lcolor="${colors[${LOG_LABEL}]}"
+    label="$(
+        paint \
+            "${lcolor%%:*}" \
+            "${lcolor##*:}" \
+            "$(_wrap_label "${label}")"
+    )"
+
+    local -r fcolor="${colors[${LOG_FUNCNAMES}]}"
+    funcnames="$(
+        paint \
+            "${fcolor%%:*}" \
+            "${fcolor##*:}" \
+            "$(_wrap_funcnames "${funcnames}")"
+    )"
+
+    local -r pcolor="${colors[${LOG_PARAMS}]}"
+    params="$(
+        paint \
+            "${pcolor%%:*}" \
+            "${pcolor##*:}" \
+            "$(_wrap_params "${params}")"
+    )"
+
+    local -r mcolor="${colors[${LOG_MESSAGE}]}"
+    message="$(
+        paint \
+            "${mcolor%%:*}" \
+            "${mcolor##*:}" \
+            "$(_wrap_message "${message}")"
+    )"
+
+    echo "$(
+        _wrap_log \
+            "${timestamp}" \
+            "${label}" \
+            "${funcnames}" \
+            "${params}" \
+            "${message}"
+    )"
+}
+
+function _format_plain_log() {
+    local -r timestamp="$1"
+    local -r level="$2"
+    local -r funcnames="$3"
+    local -r params="$4"
+    local -r message="$5"
+
+    echo "$(
+        _wrap_log \
+            "$(_wrap_timestamp "${timestamp}")" \
+            "$(_wrap_label "${LOG_LABELS[${level}]}")" \
+            "$(_wrap_funcnames "${funcnames}")" \
+            "$(_wrap_params "${params}")" \
+            "$(_wrap_message "${message}")"
+    )"
+}
+
+###############################################################################
+
+function _write_log() {
+    local -r level=$1
+    local -r text=$2
+
+    if [ "${level}" -ge "${LOG_LEVEL}" ]; then
+        local -r timestamp="$(date +"${LOG_DATE_FORMAT}")"
+        local -r funcnames="${FUNCNAME[@]}"
+
+        [ "${text:0:1}" != "(" ] && text=")${text}" || text="${text:1}"
+
+        local -r params="${text%)*}"
+        local -r message="${text#*)}"
+
+        if [ "${LOG_COLOR}" = "${ON}" ]; then
+            colorprint "$(
+                _format_color_log \
+                    "${timestamp}" "${level}" "${funcnames}" "${params}" "${message}"
+            )" >> ${LOG_OUTPUT}
+        else
+            plainprint "$(
+                _format_plain_log \
+                    "${timestamp}" "${level}" "${funcnames}" "${params}" "${message}"
+            )" >> ${LOG_OUTPUT}
+        fi
+    fi
+}
+
+###############################################################################
+
+function log_debug() {
+    local -r message=$1
+    _write_log "${DEBUG}" "${message}"
+}
+
+function log_info() {
+    local -r message=$1
+    _write_log "${INFO}" "${message}"
+}
+
+function log_warn() {
+    local -r message=$1
+    _write_log "${WARN}" "${message}"
+}
+
+function log_warning() {
+    log_warn "$@"
+}
+
+function log_error() {
+    local -r message=$1
+    _write_log "${ERROR}" "${message}"
+}
+
+function log_fatal() {
+    local -r message=$1
+    _write_log "${FATAL}" "${message}"
+}
+
+function log_critical() {
+    log_fatal "$@"
+}
+
+function log_start() {
+    local -r message=$1
+    _write_log "${START}" "${message}"
+}
+
+function log_finish() {
+    local -r finish=$1
+    _write_log "${FINISH}" "${message}"
+}
+
+###############################################################################
+
+function logging_sourced_unsets() {
+    RUN_FUNCTION "textpainting_unsets"
+}
+
+function logging_fixed_unsets() {
+    unset -v LOG_LEVEL
+    unset -v LOG_OUTPUT
+    unset -v LOG_COLOR
+    unset -v LOG_COLORS
+    unset -v LOG_DATE_FORMAT
+    unset -v LOG_FIELDS
+}
+
+function logging_custom_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+function logging_unsets() {
+    RUN_FUNCTION "logging_sourced_unsets"
+    RUN_FUNCTION "logging_fixed_unsets"
+    RUN_FUNCTION "logging_custom_unsets"
+}
+
+###############################################################################
+
+function readonly_variables() {
+    BLANK_FUNCTION_BODY
+}
+
+function readonly_functions() {
+    readonly -f _wrap_timestamp
+    readonly -f _wrap_label
+    readonly -f _wrap_funcnames
+    readonly -f _wrap_params
+    readonly -f _wrap_message
+    readonly -f _wrap_log
+    readonly -f _format_color_log
+    readonly -f _format_plain_log
+    readonly -f _write_log
+
+    readonly -f log_debug
+    readonly -f log_info
+    readonly -f log_warn
+    readonly -f log_error
+    readonly -f log_fatal
+    readonly -f log_start
+    readonly -f log_finish
+}
+
+function readonlys() {
+    RUN_FUNCTION "readonly_variables"
+    RUN_FUNCTION "readonly_functions"
+}
+
+###############################################################################
+
+RUN_FUNCTION "readonlys"

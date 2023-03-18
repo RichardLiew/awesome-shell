@@ -1,0 +1,172 @@
+#!/bin/bash
+#
+# Copyright (c) 2017 Zichoole Inc.
+# All rights reserved.
+#
+# "String Utils For Bash" version 1.0
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#    * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following disclaimer
+# in the documentation and/or other materials provided with the
+# distribution.
+#    * Neither the name of Zichoole Inc. nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES_; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# ---
+# Author:  Zichoole
+# Created: 2017-08-30 10:46:00
+# E-mail:  zichoole@gmail.com
+#
+# ---
+# Description:
+#   String utils for bash.
+#
+###############################################################################
+
+SET_HEAD "STRING_UTILS_SLIB_" && return 0
+CHECK_VARIABLE "SHELL_LIBRARIES_PATH"
+CHECK_VARIABLE "SHUNITTEST_HOME"
+
+###############################################################################
+
+set -e
+
+###############################################################################
+
+function repeat_substring() {
+    local -r substring="$1"
+    local -r counts="$2"
+
+    local result=""
+    if [[ -n "${substring}" && -n "${counts}" && ${counts} -gt 0 ]]; then
+        for (( i=0; i<counts; i++ )); do
+            result="${result}${substring}"
+        done
+    fi
+    echo "${result}"
+}
+
+function erase_substring() {
+    local -r source_string="$1"
+    local -r substring="$2"
+
+    echo "${source_string}" | sed "s/${substring}//g"
+}
+
+function replace_substring() {
+    local -r source_string="$1"
+    local -r old_substring="$2"
+    local -r new_substring="$3"
+
+    echo "${source_string}" | sed "s/${old_substring}/${new_substring}/g"
+}
+
+###############################################################################
+
+function erase_beginning() {
+    local -r string="$1"
+    local -r counts="$2"
+    echo "${string:${counts}}"
+}
+
+function erase_ending() {
+    local -r string="$1"
+    local -r counts="$2"
+    echo "${string:0:$((${#string}-${counts}))}"
+}
+
+###############################################################################
+
+function ltrim() {
+    local -r source_string="$1"
+    local -r substring="$2"
+
+    if [ -z "${substring}" ]; then
+        substring="[ \t\n\r]"
+    fi
+
+    echo "${source_string}" | awk "gsub(/^${substring}*/, '')"
+}
+
+function rtrim() {
+    local -r source_string="$1"
+    local -r substring="$2"
+
+    if [ -z "${substring}" ]; then
+        substring="[ \t\n\r]"
+    fi
+
+    echo "${source_string}" | awk "gsub(${substring}*$/, '')"
+}
+
+function trim() {
+    local -r source_string="$1"
+    local -r substring="$2"
+
+    rtrim "$(ltrim "${source_string}" "${substring}")" "${substring}"
+}
+
+###############################################################################
+
+function string_utils_sourced_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+function string_utils_fixed_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+function string_utils_custom_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+function string_utils_unsets() {
+    RUN_FUNCTION "string_utils_sourced_unsets"
+    RUN_FUNCTION "string_utils_fixed_unsets"
+    RUN_FUNCTION "string_utils_custom_unsets"
+}
+
+###############################################################################
+
+function readonly_variables() {
+    BLANK_FUNCTION_BODY
+}
+
+function readonly_functions() {
+    readonly -f repeat_substring
+    readonly -f erase_substring
+    readonly -f replace_substring
+    readonly -f erase_beginning
+    readonly -f erase_ending
+    readonly -f ltrim
+    readonly -f rtrim
+    readonly -f trim
+}
+
+function readonlys() {
+    RUN_FUNCTION "readonly_variables"
+    RUN_FUNCTION "readonly_functions"
+}
+
+###############################################################################
+
+RUN_FUNCTION "readonlys"

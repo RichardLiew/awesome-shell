@@ -1,0 +1,117 @@
+#!/bin/bash
+#
+# Copyright (c) 2017 Zichoole Inc.
+# All rights reserved.
+#
+# "Global Variables For Bash" version 1.0
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#    * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following disclaimer
+# in the documentation and/or other materials provided with the
+# distribution.
+#    * Neither the name of Zichoole Inc. nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES_; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# ---
+# Author:  Zichoole
+# Created: 2017-08-30 10:46:00
+# E-mail:  zichoole@gmail.com
+#
+# ---
+# Description:
+#   Global variables for bash.
+#
+###############################################################################
+
+SET_HEAD "VARIABLES_SLIB_" && return 0
+
+###############################################################################
+
+set -e
+
+###############################################################################
+
+__VERSION__=''
+__WARNING__=''
+__INTRO__=''
+__USAGE__=''
+
+###############################################################################
+
+readonly TRUE=0
+readonly FALSE=1
+
+readonly SUCCESS=0
+readonly FAIL=1
+
+readonly ALL="ALL"
+readonly NONE="NONE"
+readonly DEFAULT="DEFAULT"
+
+readonly ON="ON"
+readonly OFF="OFF"
+
+###############################################################################
+
+readonly NECESSARY_OPTIONS=":rtvih"
+
+###############################################################################
+
+function variables_sourced_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+function variables_fixed_unsets() {
+    unset -v __VERSION__
+    unset -v __WARNING__
+    unset -v __INTRO__
+    unset -v __USAGE__
+}
+
+function variables_custom_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+function variables_unsets() {
+    RUN_FUNCTION "variables_sourced_unsets"
+    RUN_FUNCTION "variables_fixed_unsets"
+    RUN_FUNCTION "variables_custom_unsets"
+}
+
+###############################################################################
+
+function readonly_variables() {
+    BLANK_FUNCTION_BODY
+}
+
+function readonly_functions() {
+    BLANK_FUNCTION_BODY
+}
+
+function readonlys() {
+    RUN_FUNCTION "readonly_variables"
+    RUN_FUNCTION "readonly_functions"
+}
+
+###############################################################################
+
+RUN_FUNCTION "readonlys"

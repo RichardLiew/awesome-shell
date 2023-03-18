@@ -1,0 +1,128 @@
+#!/bin/bash
+#
+# Copyright (c) 2017 Zichoole Inc.
+# All rights reserved.
+#
+# "Print Colors Of Xterm256" version 1.0
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#    * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following disclaimer
+# in the documentation and/or other materials provided with the
+# distribution.
+#    * Neither the name of Zichoole Inc. nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES_; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# ---
+# Author:  Zichoole
+# Created: 2017-08-30 10:46:00
+# E-mail:  zichoole@gmail.com
+#
+# ---
+# Description:
+#   Print colors of xterm256.
+#
+###############################################################################
+
+source "$(cd "$(dirname "$0")"; pwd)/../macros/macros.slib"
+
+###############################################################################
+
+SET_SHELL_LIBRARIES_PATH ".."
+SET_SHUNITTEST_HOME "../shunit2/source/2.1/src"
+
+###############################################################################
+
+source "${SHELL_LIBRARIES_PATH}/globals/cores.slib" 2>&1 >/dev/null
+
+###############################################################################
+
+set -e
+
+###############################################################################
+
+__VERSION__='
+    VERSION 1.0, Copyright (C) 2017 Zichoole Inc.
+'
+
+__WARNING__='
+    Need bash version 4.1.x above!
+'
+
+__INTRO__='
+    Do some system settings, and deploy some installs.
+'
+
+__USAGE__='
+    Usage:
+        print-colors -P
+    or
+        print-colors -p \
+            "front_color:back_color|sequence:group_counts-lower_color:upper_color"
+'
+
+###############################################################################
+
+function main() {
+    preprocess "$@"
+
+    while getopts "${NECESSARY_OPTIONS}Pp:" opt; do
+        case "${opt}" in
+            P|p)
+                print_colors "${OPTARG}"
+                ;;
+            *)
+                process_necessary_options "${opt}"
+                ;;
+        esac
+    done
+
+    exit_success
+}
+
+###############################################################################
+
+function custom_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+###############################################################################
+
+function readonly_variables() {
+    BLANK_FUNCTION_BODY
+}
+
+function readonly_functions() {
+    BLANK_FUNCTION_BODY
+}
+
+function readonlys() {
+    RUN_FUNCTION "readonly_variables"
+    RUN_FUNCTION "readonly_functions"
+}
+
+###############################################################################
+
+RUN_FUNCTION "readonlys"
+
+###############################################################################
+
+main "$@"

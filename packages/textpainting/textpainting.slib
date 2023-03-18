@@ -1,0 +1,459 @@
+#!/bin/bash
+#
+# Copyright (c) 2017 Zichoole Inc.
+# All rights reserved.
+#
+# "Text Painting Library For Bash" version 1.0
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#    * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following disclaimer
+# in the documentation and/or other materials provided with the
+# distribution.
+#    * Neither the name of Zichoole Inc. nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES_; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# ---
+# Author:  Zichoole
+# Created: 2017-08-30 10:46:00
+# E-mail:  zichoole@gmail.com
+#
+# ---
+# Description:
+#   Text painting library for bash.
+#
+# ---
+# TODO(Zichoole):
+#   1. Complete unittests.
+#
+###############################################################################
+
+SET_HEAD "TEXTPAINTING_SLIB_" && return 0
+CHECK_VARIABLE "SHELL_LIBRARIES_PATH"
+CHECK_VARIABLE "SHUNITTEST_HOME"
+
+###############################################################################
+
+source "${SHELL_LIBRARIES_PATH}/core/variables.slib" 2>&1 >/dev/null
+source "${SHELL_LIBRARIES_PATH}/utils/string-utils.slib" 2>&1 >/dev/null
+
+###############################################################################
+
+set -e
+
+###############################################################################
+
+readonly COLOR_COUNTS="256"
+
+###############################################################################
+
+
+readonly ESC="\033"
+readonly BEEP="\007"
+
+readonly BOLD="01"
+readonly HALF_LIGHT="02"
+readonly ITALIC="03"
+readonly UNDERLINE="04"
+readonly CLOSE_UNDERLINE="24"
+readonly BLINK="05"
+readonly CLOSE_BLINK="25"
+readonly REVERSE_VIDEO="07"
+readonly CLOSE_REVERSE_VIDEO="27"
+readonly COMMON_DENSITY="22"
+readonly BLACK_OUT="8"
+
+readonly END="${ESC}[0m"
+readonly CLOSE_ALL_COLORS_KEYBOARD_LIGHTS="${ESC}[0q"
+readonly CLEAR_SCREEN="${ESC}[2J"
+readonly SET_SCROLL_LOCK_LIGHT="${ESC}[1q"
+readonly SET_NUM_LOCK_LIGHT="${ESC}[2q"
+readonly SET_CAPS_LOCK_LIGHT="${ESC}[3q"
+
+###############################################################################
+
+readonly CLEAR_CURSOR_TO_LINE_END="${ESC}[K"
+readonly SAVE_CURSOR_POSITION="${ESC}[s"
+readonly RECOVER_CURSOR_POSITION="${ESC}[u"
+readonly HIDE_CURSOR="${ESC}[?25l"
+readonly SHOW_CURSOR="${ESC}[?25h"
+
+function set_cursor_position() {
+    local -r x="$1"
+    local -r y="$2"
+    echo "${ESC}[${y};${x}H"
+}
+
+function cursor_up() {
+    local -r n="$1"
+    echo "${ESC}[${n}A"
+}
+
+function cursor_down() {
+    local -r n="$1"
+    echo "${ESC}[${n}B"
+}
+
+function cursor_left() {
+    local -r n="$1"
+    echo "${ESC}[${n}D"
+}
+
+function cursor_right() {
+    local -r n="$1"
+    echo "${ESC}[${n}C"
+}
+
+###############################################################################
+
+readonly FG="38;5"
+readonly BG="48;5"
+
+readonly FG_GREY="30"
+readonly FG_RED="31"
+readonly FG_GREEN="32"
+readonly FG_YELLOW="33"
+readonly FG_BLUE="34"
+readonly FG_VIOLET="35"
+readonly FG_SKYBLUE="36"
+readonly FG_WHITE="37"
+
+readonly BG_BLACK="40"
+readonly BG_RED="41"
+readonly BG_GREEN="42"
+readonly BG_YELLOW="43"
+readonly BG_BLUE="44"
+readonly BG_VIOLET="45"
+readonly BG_SKYBLUE="46"
+readonly BG_WHITE="47"
+
+function format_fc() {
+    local -r fc="$1"
+    if [ -z "${fc}" ]; then
+        echo ""
+    else
+        echo "${ESC}[${FG};${fc}m"
+    fi
+}
+
+function paint_fc() {
+    local -r fc="$1"
+    local -r text="$2"
+    echo "$(format_fc "${fc}")${text}${END}"
+}
+
+function format_bc() {
+    local -r bc="$1"
+    if [ -z "${bc}" ]; then
+        echo ""
+    else
+        echo "${ESC}[${BG};${bc}m"
+    fi
+}
+
+function paint_bc() {
+    local -r bc="$1"
+    local -r text="$2"
+    echo "$(format_bc "${bc}")${text}${END}"
+}
+
+function format_color() {
+    local -r fc="$1"
+    local -r bc="$2"
+    echo "$(format_fc "${fc}")$(format_bc "${bc}")"
+}
+
+function paint() {
+    local -r fc="$1"
+    local -r bc="$2"
+    local -r text="$3"
+    echo "$(format_color "${fc}" "${bc}")${text}${END}"
+}
+
+###############################################################################
+
+function plainprint() {
+    local -r text="$1"
+    echo "${text}"
+}
+
+function colorprint() {
+    local -r text="$1"
+    echo -e "${text}"
+}
+
+###############################################################################
+
+function paint_text() {
+    local -r colors="$1"
+    local -r text="$2"
+
+    echo "$(
+        paint ${colors%%:*} ${colors##*:} "${text}"
+    )"
+}
+
+function paint_label() {
+    local -r colors="$1"
+    local -r label="$2"
+
+    echo "$(
+        paint ${colors%%:*} ${colors##*:} "[${label}]"
+    )"
+}
+
+function paint_timestamp() {
+    local colors="$1"
+    local timestamp="$2"
+
+    [ -z "${colors}" ] && colors="0:226"
+    [ -z "${timestamp}" ] && timestamp="$(date +'%Y-%m-%d %H:%M:%S %Z')"
+
+    echo "$(
+        paint_text "${colors}" "[${timestamp}]"
+    )"
+}
+
+function paint_text_with_label() {
+    local colors="$1"
+    local -r label="$2"
+    local -r text="$3"
+
+    [[ "${colors}" != *"|"* ]] && colors="|${colors}"
+
+    local -r timestamp_colors="${colors%%|*}"
+    local -r lt_colors="${colors##*|}"
+
+    local -r label_color="${lt_colors%%-*}"
+    local -r text_color="${lt_colors##*-}"
+
+    local result="$(
+        paint_label "${label_color}" "${label}"
+    )"
+    result="${result}$(
+        paint_text "${text_color}" "${text}"
+    )"
+
+    if [ -n "${timestamp_colors}" ]; then
+        result="$(paint_timestamp "${timestamp_colors}")${result}"
+    fi
+
+    echo "${result}"
+}
+
+###############################################################################
+
+function _parse_params() {
+    local params="$1"
+    [[ "${params}" != *"|"* ]] && params="${params}|"
+
+    local colors="${params%%|*}"
+    [[ "${colors}" != *":"* ]] && colors="${colors}:"
+
+    local front_color="${colors%%:*}"
+    [ -z "${front_color}" ] && front_color="-1"
+
+    local back_color="${colors##*:}"
+    [ -z "${back_color}" ] && back_color="-1"
+
+    local styles="${params##*|}"
+    [[ "${styles}" != *"-"* ]] && styles="${styles}-"
+
+    local sequence_ngroups="${styles%%-*}"
+    [[ "${sequence_ngroups}" != *":"* ]] && sequence_ngroups="${sequence_ngroups}:"
+
+    local sequence="${sequence_ngroups%%:*}"
+    [ -z "${sequence}" ] && sequence="h"
+
+    local ngroups="${sequence_ngroups##*:}"
+    [ -z "${ngroups}" ] && ngroups="8"
+
+    local ncolors="${styles##*-}"
+    [[ "${ncolors}" != *":"* ]] && ncolors="${ncolors}:"
+
+    local lower_color="${ncolors%%:*}"
+    [ -z "${lower_color}" ] && lower_color="0"
+
+    local upper_color="${ncolors##*:}"
+    [ -z "${upper_color}" ] && upper_color="256"
+
+    echo "${front_color} ${back_color} ${sequence} ${ngroups} ${lower_color} ${upper_color}"
+}
+
+function _format_example() {
+    local -r front_color="$1"
+    local -r back_color="$2"
+
+    local example="$(
+        repeat_substring \
+            " " \
+            "$((
+                3-$(echo "${front_color}" | awk -F ";" '{print length($1)}')
+            ))"
+    )"
+    example="${example}${front_color}:${back_color}"
+    example="${example}$(
+        repeat_substring \
+            " " \
+            "$((
+                3-$(echo "${back_color}" | awk -F ";" '{print length($1)}')
+            ))"
+    )"
+    example=" ${example} EXAMPLE "
+
+    echo "$(
+        paint_text "${front_color}:${back_color}" "${example}"
+    )"
+}
+
+function print_colors() {
+    local -r params=($(_parse_params "$@"))
+
+    local -r front_color="${params[0]}"
+    local -r back_color="${params[1]}"
+    local -r sequence="${params[2]}"
+    local -r ngroups="${params[3]}"
+    local -r lower_color="${params[4]}"
+    local -r upper_color="${params[5]}"
+
+    local colors=()
+    for (( i=lower_color; i<upper_color; i++ )); do
+        colors[$((${i}-${lower_color}))]=$(
+            _format_example \
+                "$(
+                    [ "${front_color:0:2}" = "-1" ] && \
+                        echo "${i}${front_color:2}" || echo "${front_color}"
+                )" \
+                "$(
+                    [ "${back_color:0:2}" = "-1" ] && \
+                        echo "${i}${back_color:2}" || echo "${back_color}"
+                )"
+        )
+        if [ "${front_color:0:2}" != "-1" ]; then
+            if [ "${back_color:0:2}" != "-1" ]; then
+                break
+            fi
+        fi
+    done
+
+    if [ "${sequence}" = "h" ]; then
+        local -r nrows="$((${#colors[@]}/${ngroups}+1))"
+        local -r ncolumns="${ngroups}"
+    else
+        local -r ncolumns="$((${#colors[@]}/${ngroups}+1))"
+        local -r nrows="${ngroups}"
+    fi
+
+    for (( i=0; i<nrows; i++ )); do
+        for (( j=0; j<ncolumns; j++ )); do
+            local coord=($(
+                [ "${sequence}" = "h" ] && echo "${i} ${j}" || echo "${j} ${i}"
+            ))
+
+            local index=$((${coord[0]}*${ngroups}+${coord[1]}))
+            if [ ${index} -ge ${#colors[@]} ]; then
+                continue
+            fi
+
+            local separator=""
+            if [ "${sequence}" = "h" ]; then
+                if [ ${index} -ne $((${#colors[@]}-1)) ]; then
+                    if [ ${j} -eq $((${ngroups}-1)) ]; then
+                        separator="\n\c"
+                    else
+                        separator=" \c"
+                    fi
+                fi
+            else
+                if [ $((${#colors[@]}/${ngroups})) -gt 0 ]; then
+                    if [ ${index} -ne $((${#colors[@]}-${#colors[@]}%${ngroups}-1)) ]; then
+                        if [ $((${i}+${ngroups}*(${j}+1))) -ge ${#colors[@]} ]; then
+                            separator="\n\c"
+                        else
+                            separator=" \c"
+                        fi
+                    fi
+                fi
+            fi
+
+            colorprint "${colors[${index}]}${separator}"
+        done
+    done
+}
+
+###############################################################################
+
+function textpainting_sourced_unsets() {
+    RUN_FUNCTION "variables_unsets"
+    RUN_FUNCTION "string_utils_unsets"
+}
+
+function textpainting_fixed_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+function textpainting_custom_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+function textpainting_unsets() {
+    RUN_FUNCTION "textpainting_sourced_unsets"
+    RUN_FUNCTION "textpainting_fixed_unsets"
+    RUN_FUNCTION "textpainting_custom_unsets"
+}
+
+###############################################################################
+
+function readonly_variables() {
+    BLANK_FUNCTION_BODY
+}
+
+function readonly_functions() {
+    readonly -f set_cursor_position
+    readonly -f cursor_up
+    readonly -f cursor_down
+    readonly -f cursor_left
+    readonly -f cursor_right
+    readonly -f format_fc
+    readonly -f paint_fc
+    readonly -f format_bc
+    readonly -f paint_bc
+    readonly -f format_color
+    readonly -f paint
+    readonly -f plainprint
+    readonly -f colorprint
+    readonly -f paint_text
+    readonly -f paint_label
+    readonly -f paint_timestamp
+    readonly -f paint_text_with_label
+    readonly -f _parse_params
+    readonly -f _format_example
+    readonly -f print_colors
+}
+
+function readonlys() {
+    RUN_FUNCTION "readonly_variables"
+    RUN_FUNCTION "readonly_functions"
+}
+
+###############################################################################
+
+RUN_FUNCTION "readonlys"

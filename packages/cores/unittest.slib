@@ -1,0 +1,243 @@
+#!/bin/bash
+#
+# Copyright (c) 2017 Zichoole Inc.
+# All rights reserved.
+#
+# "Unittests For Bash" version 1.0
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#    * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following disclaimer
+# in the documentation and/or other materials provided with the
+# distribution.
+#    * Neither the name of Zichoole Inc. nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES_; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# ---
+# Author:  Zichoole
+# Created: 2017-08-30 10:46:00
+# E-mail:  zichoole@gmail.com
+#
+# ---
+# Description:
+#   Unittests for bash.
+#
+###############################################################################
+
+SET_HEAD "UNITTESTS_SLIB_" && return 0
+CHECK_VARIABLE "SHELL_LIBRARIES_PATH"
+CHECK_VARIABLE "SHUNITTEST_HOME"
+
+###############################################################################
+
+set -e
+
+###############################################################################
+
+source "${SHELL_LIBRARIES_PATH}/textpainting/textpainting.slib" 2>&1 >/dev/null
+
+###############################################################################
+
+function unittest_success() {
+    local funcname="${FUNCNAME[2]}"
+    if [ "${funcname:0:5}" = "test_" ]; then
+        funcname="${funcname#*_}"
+    fi
+    colorprint "$(
+        paint_text_with_label \
+            "0:226|0:2-0:136" \
+            "SUCCESS" \
+            " Test function <${funcname}()> successfully."
+    )"
+}
+
+function unittest_fail() {
+    local funcname="${FUNCNAME[2]}"
+    if [ "${funcname:0:5}" = "test_" ]; then
+        funcname="${funcname#*_}"
+    fi
+    colorprint "$(
+        paint_text_with_label \
+            "0:226|0:1;${BLINK}-0:92;${BLINK}" \
+            "FAILURE" \
+            " Test function <${funcname}()> failed."
+    )${BEEP}"
+}
+
+function unittest_beginning() {
+    local funcname="${FUNCNAME[1]}"
+    if [ "${funcname:0:5}" = "test_" ]; then
+        funcname="${funcname#*_}"
+    fi
+    colorprint "$(cursor_up 1)${CLEAR_CURSOR_TO_LINE_END}$(
+        paint_text_with_label \
+            "0:226|0:11-0:14" \
+            "TESTING" \
+            " Testing function <${funcname}()> ... ..."
+    )"
+}
+
+function unittest_ending() {
+    local -r return_code="$1"
+    if [ ${return_code} -eq ${SUCCESS} ]; then
+        unittest_success
+    else
+        unittest_fail
+    fi
+}
+
+###############################################################################
+
+function unittests_beginning() {
+    colorprint "$(
+        paint_text_with_label \
+            "0:226|0:8-0:7" \
+            " START " \
+            " Starting unittests ... ..."
+    )\n"
+}
+
+function unittests_ending() {
+    local result="$(
+        source "${SHUNITTEST_HOME}/shunit2"
+    )"
+    local -r total_counts="$(
+        echo "${result}" |
+        egrep -o "Ran [0-9]+ tests." |
+        egrep -o "[0-9]+"
+    )"
+    local -r failure_count="$(
+        echo "${result}" |
+        egrep -o "FAILED \(failures=[0-9]+\)" |
+        egrep -o "[0-9]+"
+    )"
+    if [ -n "${failure_count}" ]; then
+        local failure_ratio="0"
+        if [[ -n "${total_counts}" && ${total_counts} -ne 0 ]]; then
+            failure_ratio="$(
+                echo "scale=2; ${failure_count} * 100 / ${total_counts}" | bc
+            )"
+        fi
+        result="${result%?}, failratio=${failure_ratio}%)"
+    fi
+    colorprint "${result}\n\n$(
+        paint_text_with_label \
+            "0:226|0:8-0:7" \
+            "FINISH " \
+            " Unittests finished."
+    )${BEEP}"
+}
+
+###############################################################################
+
+function unittests_setup() {
+    _TEST_EXAMPLE="TEST-EXAMPLE"
+}
+
+function unittests_teardown() {
+    RUN_FUNCTION unittests_unsets
+}
+
+function unittests_before() {
+    unittests_beginning
+    unittests_setup
+}
+
+function unittests() {
+    function test_example() {
+        unittest_beginning
+        local -r correct="${_TEST_EXAMPLE}"
+        local -r result="${_TEST_EXAMPLE}"
+        assertEquals "${correct}" "${result}"
+        unittest_ending "$?"
+    }
+
+    function test_another_example() {
+        unittest_beginning
+        local -r correct="${_TEST_EXAMPLE}"
+        local -r result="ANOTHER-${_TEST_EXAMPLE}"
+        assertEquals "Left must equal to right: " "${correct}" "${result}"
+        unittest_ending "$?"
+    }
+}
+
+function unittests_after() {
+    unittests_ending
+    unittests_teardown
+}
+
+function unittests_run() {
+    unittests_before
+    unittests
+    unittests_after
+}
+
+###############################################################################
+
+function unittests_sourced_unsets() {
+    RUN_FUNCTION "textpainting_unsets"
+}
+
+function unittests_fixed_unsets() {
+    unset -f unittests_setup
+    unset -f unittests
+}
+
+function unittests_custom_unsets() {
+    unset -v _TEST_EXAMPLE
+
+    unset -f test_example
+    unset -f test_another_example
+}
+
+function unittests_unsets() {
+    RUN_FUNCTION "unittests_sourced_unsets"
+    RUN_FUNCTION "unittests_fixed_unsets"
+    RUN_FUNCTION "unittests_custom_unsets"
+}
+
+###############################################################################
+
+function readonly_variables() {
+    BLANK_FUNCTION_BODY
+}
+
+function readonly_functions() {
+    readonly -f unittest_beginning
+    readonly -f unittest_success
+    readonly -f unittest_fail
+    readonly -f unittest_ending
+    readonly -f unittests_beginning
+    readonly -f unittests_ending
+    readonly -f unittests_teardown
+    readonly -f unittests_before
+    readonly -f unittests_after
+    readonly -f unittests_run
+}
+
+function readonlys() {
+    RUN_FUNCTION "readonly_variables"
+    RUN_FUNCTION "readonly_functions"
+}
+
+###############################################################################
+
+RUN_FUNCTION "readonlys"

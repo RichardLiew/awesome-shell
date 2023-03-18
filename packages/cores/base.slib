@@ -1,0 +1,315 @@
+#!/bin/bash
+#
+# Copyright (c) 2017 Zichoole Inc.
+# All rights reserved.
+#
+# "Cores For Bash" version 1.0
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#    * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following disclaimer
+# in the documentation and/or other materials provided with the
+# distribution.
+#    * Neither the name of Zichoole Inc. nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES_; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# ---
+# Author:  Zichoole
+# Created: 2017-08-30 10:46:00
+# E-mail:  zichoole@gmail.com
+#
+# ---
+# Description:
+#   Cores for bash.
+#
+###############################################################################
+
+SET_HEAD "CORES_SLIB_" && return 0
+CHECK_VARIABLE "SHELL_LIBRARIES_PATH"
+CHECK_VARIABLE "SHUNITTEST_HOME"
+
+###############################################################################
+
+set -e
+
+###############################################################################
+
+source "${SHELL_LIBRARIES_PATH}/logging/logging.slib" 2>&1 >/dev/null
+source "${SHELL_LIBRARIES_PATH}/globals/unittests.slib" 2>&1 >/dev/null
+
+###############################################################################
+
+function show_version() {
+    if [ -n "${__VERSION__}" ]; then
+        colorprint "$(
+            paint_text_with_label \
+                "0:76-0:76" \
+                "VERSION" \
+                "$(
+                    erase_ending "${__VERSION__}" "1"
+                )"
+        )"
+    fi
+}
+
+function show_warning() {
+    if [ -n "${__WARNING__}" ]; then
+        colorprint "$(
+            paint_text_with_label \
+                "0;${BLINK}:1-0;${BLINK}:1" \
+                "WARNING" \
+                "$(
+                    erase_ending "${__WARNING__}" "1"
+                )"
+        )${BEEP}"
+    fi
+}
+
+function show_intro() {
+    if [ -n "${__INTRO__}" ]; then
+        colorprint "$(
+            paint_text_with_label \
+                "0:93-0:93" \
+                " INTRO " \
+                "$(
+                    erase_ending "${__INTRO__}" "1"
+                )"
+        )"
+    fi
+}
+
+function show_usage() {
+    if [ -n "${__USAGE__}" ]; then
+        colorprint "$(
+            paint_text_with_label \
+                "0:131-0:131" \
+                " USAGE " \
+                "$(
+                    erase_ending "${__USAGE__}" "1"
+                )"
+        )"
+    fi
+}
+
+function show_help() {
+    show_version
+    show_warning
+    show_intro
+    show_usage
+}
+
+###############################################################################
+
+function exit_success() {
+    RUN_FUNCTION "unsets"
+    exit ${SUCCESS}
+}
+
+function exit_fail() {
+    RUN_FUNCTION "unsets"
+    exit ${FAIL}
+}
+
+###############################################################################
+
+function preprocess() {
+    log_info " Start to run preprocess ... ..."
+    if [ $# -eq 0 ]; then
+        show_help
+        exit_success
+    fi
+}
+
+function run() {
+    log_info " Start to excute run function ... ..."
+    BLANK_FUNCTION_BODY
+    log_info " Excute run function finished!"
+}
+
+function process_necessary_options() {
+    local -r option="$1"
+
+    case "${option}" in
+        r)
+            run
+            ;;
+        t)
+            unittests_run
+            ;;
+        v)
+            show_version
+            show_warning
+            exit_success
+            ;;
+        i)
+            show_intro
+            show_warning
+            exit_success
+            ;;
+        h)
+            show_help
+            exit_success
+            ;;
+        *)
+            log_warn " Invalid option <${option}>!"
+            exit_fail
+            ;;
+    esac
+}
+
+###############################################################################
+
+function unittests() {
+    function test_show_version() {
+        unittest_beginning
+        local -r correct="${_FC}${_BC}[VERSION]${END}${_FC}${_BC} ${_TEST_STRING}${END}"
+        local -r result="$(
+            paint_text_with_label \
+                "${_COLOR}:${_COLOR}-${_COLOR}:${_COLOR}" \
+                "VERSION" \
+                "${_TEST_STRING}"
+        )"
+        assertEquals "${correct}" "${result}"
+        unittest_ending "$?"
+    }
+
+    function test_show_warning() {
+        unittest_beginning
+        local -r correct="${_FC}${_BC}[WARNING]${END}${_FC}${_BC} ${_TEST_STRING}${END}"
+        local -r result="$(
+            paint_text_with_label \
+                "${_COLOR}:${_COLOR}-${_COLOR}:${_COLOR}" \
+                "WARNING" \
+                "${_TEST_STRING}"
+        )"
+        assertEquals "${correct}" "${result}"
+        unittest_ending "$?"
+    }
+
+    function test_show_intro() {
+        unittest_beginning
+        local -r correct="${_FC}${_BC}[INTRO]${END}${_FC}${_BC} ${_TEST_STRING}${END}"
+        local -r result="$(
+            paint_text_with_label \
+                "${_COLOR}:${_COLOR}-${_COLOR}:${_COLOR}" \
+                "INTRO" \
+                "${_TEST_STRING}"
+        )"
+        assertEquals "${correct}" "${result}"
+        unittest_ending "$?"
+    }
+
+    function test_show_usage() {
+        unittest_beginning
+        local -r correct="${_FC}${_BC}[USAGE]${END}${_FC}${_BC} ${_TEST_STRING}${END}"
+        local -r result="$(
+            paint_text_with_label \
+                "${_COLOR}:${_COLOR}-${_COLOR}:${_COLOR}" \
+                "USAGE" \
+                "${_TEST_STRING}"
+        )"
+        assertEquals "${correct}" "${result}"
+        unittest_ending "$?"
+    }
+}
+
+###############################################################################
+
+function unittests_custom_unsets() {
+    unset -f test_show_version
+    unset -f test_show_warning
+    unset -f test_show_intro
+    unset -f test_show_usage
+}
+
+###############################################################################
+
+function main() {
+    log_start " Program starting ... ..."
+
+    preprocess "$@"
+    while getopts "${NECESSARY_OPTIONS}" opt; do
+        case "${opt}" in
+            *)
+                process_necessary_options "${opt}"
+                ;;
+        esac
+    done
+
+    log_finish " Program finished!"
+
+    exit_success
+}
+
+###############################################################################
+
+function sourced_unsets() {
+    RUN_FUNCTION "unittests_unsets"
+}
+
+function fixed_unsets() {
+    unset -v __VERSION__
+    unset -v __WARNING__
+    unset -v __INTRO__
+    unset -v __USAGE__
+
+    unset -f preprocess
+    unset -f run
+    unset -f main
+}
+
+function custom_unsets() {
+    BLANK_FUNCTION_BODY
+}
+
+function unsets() {
+    log_info " Start to run unsets ... ..."
+
+    RUN_FUNCTION "sourced_unsets"
+    RUN_FUNCTION "fixed_unsets"
+    RUN_FUNCTION "custom_unsets"
+}
+
+###############################################################################
+
+function readonly_variables() {
+    BLANK_FUNCTION_BODY
+}
+
+function readonly_functions() {
+    readonly -f show_version
+    readonly -f show_warning
+    readonly -f show_intro
+    readonly -f show_usage
+    readonly -f show_help
+    readonly -f exit_success
+    readonly -f exit_fail
+    readonly -f process_necessary_options
+}
+
+function readonlys() {
+    RUN_FUNCTION "readonly_variables"
+    RUN_FUNCTION "readonly_functions"
+}
+
+###############################################################################
+
+RUN_FUNCTION "readonlys"
